@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <canvas id="c16" width="16" height="16"></canvas>
+    <canvas id="c48" width="48" height="48"></canvas>
+    <canvas id="c128" width="128" height="128"></canvas>
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 128;
+
+            // Background
+            ctx.fillStyle = '#6366f1';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.15);
+            ctx.fill();
+
+            // Download arrow
+            ctx.strokeStyle = '#fff';
+            ctx.fillStyle = '#fff';
+            ctx.lineWidth = size * 0.08;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Arrow shaft
+            ctx.beginPath();
+            ctx.moveTo(size * 0.5, size * 0.2);
+            ctx.lineTo(size * 0.5, size * 0.55);
+            ctx.stroke();
+
+            // Arrow head
+            ctx.beginPath();
+            ctx.moveTo(size * 0.3, size * 0.45);
+            ctx.lineTo(size * 0.5, size * 0.65);
+            ctx.lineTo(size * 0.7, size * 0.45);
+            ctx.stroke();
+
+            // Base line
+            ctx.beginPath();
+            ctx.moveTo(size * 0.25, size * 0.8);
+            ctx.lineTo(size * 0.75, size * 0.8);
+            ctx.stroke();
+        }
+
+        drawIcon(document.getElementById('c16'), 16);
+        drawIcon(document.getElementById('c48'), 48);
+        drawIcon(document.getElementById('c128'), 128);
+
+        // Output as data URLs
+        console.log('icon16:', document.getElementById('c16').toDataURL());
+        console.log('icon48:', document.getElementById('c48').toDataURL());
+        console.log('icon128:', document.getElementById('c128').toDataURL());
+    </script>
+</body>
+</html>

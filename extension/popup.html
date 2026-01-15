@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <h1>Media Downloader</h1>
+      </div>
+      <div class="header-actions">
+        <button id="refresh-btn" class="icon-btn" title="Refresh - rescan page for media">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+        <button id="download-all-btn" class="icon-btn" title="Download All">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+        <button id="settings-btn" class="icon-btn" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Restriction notice (shown when some content is blocked) -->
+    <div id="restriction-notice" class="restriction-notice hidden">
+      <span id="restriction-icon" class="restriction-icon"></span>
+      <span id="restriction-text">Some content restricted</span>
+      <svg class="restriction-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-type="all">All</button>
+      <button class="filter-btn" data-type="image">Images</button>
+      <button class="filter-btn" data-type="video">Videos</button>
+    </div>
+
+    <div class="stats">
+      <span id="media-count">0 items</span>
+      <span id="total-size"></span>
+    </div>
+
+    <!-- Selection toolbar -->
+    <div id="selection-toolbar" class="selection-toolbar">
+      <span class="selection-info">
+        <span id="selected-count">0</span> selected
+      </span>
+      <div class="selection-actions">
+        <button id="download-selected-btn" class="btn-primary btn-sm">Download</button>
+        <button id="clear-selection-btn" class="btn-ghost btn-sm">Clear</button>
+      </div>
+    </div>
+
+    <div id="media-list" class="media-list">
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Scanning page...</span>
+      </div>
+    </div>
+
+    <!-- Download Progress -->
+    <div id="hls-progress" class="progress-container hidden">
+      <div class="progress-header">
+        <span class="progress-text">Downloading...</span>
+        <button id="cancel-download-btn" class="icon-btn-sm" title="Cancel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-details"></div>
+    </div>
+
+    <!-- Download All Modal -->
+    <div id="download-modal" class="modal-overlay">
+      <div class="modal modal-compact">
+        <div class="modal-header-compact">
+          <span class="modal-title-sm">What would you like to download?</span>
+          <button class="modal-close" id="modal-close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body-compact">
+          <div class="download-options">
+            <button class="download-option" id="download-images-btn">
+              <div class="option-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <path d="M21 15l-5-5L5 21"/>
+                </svg>
+              </div>
+              <div class="option-text">
+                <span class="option-title">Images Only</span>
+                <span class="option-count" id="image-count">0 images</span>
+              </div>
+            </button>
+            <button class="download-option" id="download-videos-btn">
+              <div class="option-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </div>
+              <div class="option-text">
+                <span class="option-title">Videos Only</span>
+                <span class="option-count" id="video-count">0 videos</span>
+              </div>
+            </button>
+            <button class="download-option" id="download-both-btn">
+              <div class="option-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </div>
+              <div class="option-text">
+                <span class="option-title">Download All</span>
+                <span class="option-count" id="all-count">0 files</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Panel (Slide-out) -->
+    <div id="settings-panel" class="settings-panel">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button id="settings-close" class="icon-btn-sm">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="settings-content">
+        <!-- Display Settings -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Display</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Default sort order</span>
+              <span class="setting-desc">How to sort media items in the list</span>
+            </div>
+            <select id="setting-sort-order" class="setting-select">
+              <option value="newest">Newest first</option>
+              <option value="largest">Largest first</option>
+              <option value="type">By type</option>
+              <option value="name">By name</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Download Settings -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Downloads</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Bundle as ZIP</span>
+              <span class="setting-desc">Create ZIP when downloading multiple files</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-zip-downloads" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Ask where to save</span>
+              <span class="setting-desc">Prompt for download location each time</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-save-as">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Filename Settings -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Filenames</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Use page title</span>
+              <span class="setting-desc">Include page title in downloaded filenames</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-use-title">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Clean filenames</span>
+              <span class="setting-desc">Remove special characters and clean up names</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-clean-names" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Filtering Settings -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Filtering</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Skip small images</span>
+              <span class="setting-desc">Ignore images smaller than threshold</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-skip-small" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item setting-slider-item">
+            <div class="setting-info">
+              <span class="setting-label">Minimum size: <span id="min-size-value">80</span>px</span>
+              <span class="setting-desc">Images smaller than this are filtered out</span>
+            </div>
+            <input type="range" id="setting-min-size" class="setting-slider" min="40" max="200" value="80" step="10">
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">Hide duplicates</span>
+              <span class="setting-desc">Filter out duplicate images (different sizes)</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-hide-dupes" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Troubleshooting</h3>
+          <div class="setting-action">
+            <button id="export-logs-btn" class="setting-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Export Debug Logs
+            </button>
+            <span class="setting-hint">Share with support when reporting issues</span>
+          </div>
+          <div class="setting-action">
+            <button id="clear-cache-btn" class="setting-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Clear Cache
+            </button>
+            <span class="setting-hint">Reset stored media data for current tab</span>
+          </div>
+          <div class="setting-action">
+            <button id="flush-logs-btn" class="setting-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              Flush Logs
+            </button>
+            <span class="setting-hint">Clear debug log file</span>
+          </div>
+          <div class="setting-action">
+            <button id="reset-settings-btn" class="setting-btn setting-btn-danger">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              Reset All Settings
+            </button>
+            <span class="setting-hint">Restore all settings to defaults</span>
+          </div>
+        </div>
+
+        <!-- About -->
+        <div class="settings-section settings-about">
+          <span class="about-text">Media Downloader v1.0.0</span>
+          <span class="about-hint">Some sites may restrict downloads due to Chrome policies</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="preview-modal" class="modal-overlay">
+      <div class="preview-container">
+        <button class="preview-close" id="preview-close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+        <img id="preview-image" src="" alt="Preview">
+      </div>
+    </div>
+
+    <!-- Cancel Download Modal - Simple Yes/No -->
+    <div id="cancel-modal" class="modal-overlay">
+      <div class="modal modal-tiny">
+        <div class="cancel-prompt">
+          <span>Cancel download?</span>
+          <div class="cancel-actions">
+            <button id="cancel-modal-no" class="cancel-icon-btn cancel-no" title="No, continue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            <button id="cancel-modal-yes" class="cancel-icon-btn cancel-yes" title="Yes, cancel">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="jszip.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
